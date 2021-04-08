@@ -36,6 +36,8 @@
       user: "{{ f5.username }}"
       password: "{{ f5.password }}"
       validate_certs: "{{ f5.validate_certs }}"
+  when:
+    - f5.partition != "Common"
 
 - name: Create master nodes
   bigip_node:
