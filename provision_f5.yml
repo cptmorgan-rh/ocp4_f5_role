@@ -1,0 +1,8 @@
+---
+- hosts: localhost
+  gather_facts: False
+  connection: local
+  tasks:
+    - name: Configure F5 for OCP LBs
+      import_role:
+        name: ocp_f5

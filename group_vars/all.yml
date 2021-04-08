@@ -1,0 +1,41 @@
+f5:
+  host: 172.16.10.254
+  partition: OpenShift
+  username: admin
+  password: B1GIPP@ssw0rd!
+  validate_certs: false
+master_vms:
+  - { name: "master1", ipaddr: "10.0.0.21"}
+  - { name: "master2", ipaddr: "10.0.0.22"}
+  - { name: "master3", ipaddr: "10.0.0.23"}
+worker_vms:
+  - { name: "worker1", ipaddr: "10.0.0.24"}
+  - { name: "worker2", ipaddr: "10.0.0.25"}
+api:
+  pool_name: ocp_api_pool
+  vip_name: ocp_api_vip
+  state: present
+  port: 6443
+  monitor: openshift_6443
+  dest_ipaddr: 10.0.0.30
+machine_api:
+  pool_name: ocp_machine_api_pool
+  vip_name: ocp_machine_api_vip
+  state: present
+  port: 22623
+  monitor: openshift_22623
+  dest_ipaddr: 10.0.0.30
+http:
+  pool_name: ocp_http_pool
+  vip_name: ocp_http_vip
+  state: present
+  port: 80
+  monitor: openshift_80
+  dest_ipaddr: 10.0.0.30
+https:
+  pool_name: ocp_https_pool
+  vip_name: ocp_https_vip
+  state: present
+  port: 443
+  monitor: "/Common/https_443"
+  dest_ipaddr: 10.0.0.30

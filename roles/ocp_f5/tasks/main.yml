@@ -1,0 +1,175 @@
+---
+- name: Create {{ f5.partition }} Partition
+  bigip_partition:
+    name: "{{ f5.partition }}"
+    provider:
+      server: "{{ f5.host }}"
+      user: "{{ f5.username }}"
+      password: "{{ f5.password }}"
+      validate_certs: "{{ f5.validate_certs }}"
+  when:
+    - f5.partition != "Common"
+
+- name: Create OCP API and Machine Monitors
+  bigip_monitor_https:
+    name: "{{ item.monitor }}"
+    ip: "*"
+    port: "{{ item.port }}"
+    partition: "{{ f5.partition }}"
+    provider:
+      server: "{{ f5.host }}"
+      user: "{{ f5.username }}"
+      password: "{{ f5.password }}"
+      validate_certs: "{{ f5.validate_certs }}"
+  with_items:
+    - "{{ api }}"
+    - "{{ machine_api }}"
+
+- name: Create OCP HTTP Monitor
+  bigip_monitor_http:
+    name: "{{ http.monitor }}"
+    ip: "*"
+    port: "{{ http.port }}"
+    partition: "{{ f5.partition }}"
+    provider:
+      server: "{{ f5.host }}"
+      user: "{{ f5.username }}"
+      password: "{{ f5.password }}"
+      validate_certs: "{{ f5.validate_certs }}"
+
+- name: Create master nodes
+  bigip_node:
+    address: "{{ item.ipaddr }}"
+    name: "{{ item.name }}"
+    state: present
+    partition: "{{ f5.partition }}"
+    monitors:
+      - "{{ api.monitor }}"
+      - "{{ machine_api.monitor }}"
+    provider:
+      server: "{{ f5.host }}"
+      user: "{{ f5.username }}"
+      password: "{{ f5.password }}"
+      validate_certs: "{{ f5.validate_certs }}"
+  with_items:
+    - "{{ master_vms }}"
+
+- name: Create worker nodes
+  bigip_node:
+    address: "{{ item.ipaddr }}"
+    name: "{{ item.name }}"
+    state: present
+    partition: "{{ f5.partition }}"
+    monitors:
+      - "{{ http.monitor }}"
+      - "{{ https.monitor }}"
+    provider:
+      server: "{{ f5.host }}"
+      user: "{{ f5.username }}"
+      password: "{{ f5.password }}"
+      validate_certs: "{{ f5.validate_certs }}"
+  with_items:
+    - "{{ worker_vms }}"
+
+- name: Create OCP pools
+  bigip_pool:
+    name: "{{ item.pool_name }}"
+    lb_method: round-robin
+    partition: "{{ f5.partition }}"
+    state: "{{ item.state }}"
+    monitors: "{{ item.monitor }}"
+    provider:
+      server: "{{ f5.host }}"
+      user: "{{ f5.username }}"
+      password: "{{ f5.password }}"
+      validate_certs: "{{ f5.validate_certs }}"
+  with_items:
+    - "{{ api }}"
+    - "{{ machine_api }}"
+    - "{{ http }}"
+    - "{{ https }}"
+
+- name: Add master nodes to api pool
+  bigip_pool_member:
+    host: "{{ item.ipaddr }}"
+    name: "{{ item.name }}"
+    pool: "{{ api.pool_name }}"
+    port: "{{ api.port }}"
+    state: present
+    partition: "{{ f5.partition }}"
+    provider:
+      server: "{{ f5.host }}"
+      user: "{{ f5.username }}"
+      password: "{{ f5.password }}"
+      validate_certs: "{{ f5.validate_certs }}"
+  with_items:
+    - "{{ master_vms }}"
+
+- name: Add master nodes to machine api pool
+  bigip_pool_member:
+    host: "{{ item.ipaddr }}"
+    name: "{{ item.name }}"
+    pool: "{{ machine_api.pool_name }}"
+    port: '{{ machine_api.port }}'
+    state: present
+    partition: "{{ f5.partition }}"
+    provider:
+      server: "{{ f5.host }}"
+      user: "{{ f5.username }}"
+      password: "{{ f5.password }}"
+      validate_certs: "{{ f5.validate_certs }}"
+  with_items:
+    - "{{ master_vms }}"
+
+- name: Add worker nodes to https pool
+  bigip_pool_member:
+    host: "{{ item.ipaddr }}"
+    name: "{{ item.name }}"
+    pool: "{{ https.pool_name }}"
+    port: "{{ https.port }}"
+    state: present
+    partition: "{{ f5.partition }}"
+    provider:
+      server: "{{ f5.host }}"
+      user: "{{ f5.username }}"
+      password: "{{ f5.password }}"
+      validate_certs: "{{ f5.validate_certs }}"
+  with_items:
+    - "{{ worker_vms }}"
+
+- name: Add worker nodes to http pool
+  bigip_pool_member:
+    host: "{{ item.ipaddr }}"
+    name: "{{ item.name }}"
+    pool: "{{ http.pool_name }}"
+    port: "{{ http.port }}"
+    state: present
+    partition: "{{ f5.partition }}"
+    provider:
+      server: "{{ f5.host }}"
+      user: "{{ f5.username }}"
+      password: "{{ f5.password }}"
+      validate_certs: "{{ f5.validate_certs }}"
+  with_items:
+    - "{{ worker_vms }}"
+
+- name: Create OCP VIPs
+  bigip_virtual_server:
+    description: "{{ item.pool_name }}"
+    destination: "{{ item.dest_ipaddr }}"
+    name: "{{ item.vip_name }}"
+    pool: "{{ item.pool_name }}"
+    port: "{{ item.port }}"
+    snat: Automap
+    state: "{{ item.state }}"
+    partition: "{{ f5.partition }}"
+    provider:
+      server: "{{ f5.host }}"
+      user: "{{ f5.username }}"
+      password: "{{ f5.password }}"
+      validate_certs: "{{ f5.validate_certs }}"
+  with_items:
+    - "{{ api }}"
+    - "{{ machine_api }}"
+    - "{{ http }}"
+    - "{{ https }}"
