@@ -4,13 +4,15 @@ f5:
   username: admin
   password: B1GIPP@ssw0rd!
   validate_certs: false
-master_vms:
-  - { name: "master1", ipaddr: "10.0.0.21"}
-  - { name: "master2", ipaddr: "10.0.0.22"}
-  - { name: "master3", ipaddr: "10.0.0.23"}
-worker_vms:
-  - { name: "worker1", ipaddr: "10.0.0.24"}
-  - { name: "worker2", ipaddr: "10.0.0.25"}
+bootstrap_node:
+  - { name: "bootstrap", ipaddr: "10.0.0.20" }
+master_nodes:
+  - { name: "master1", ipaddr: "10.0.0.21" }
+  - { name: "master2", ipaddr: "10.0.0.22" }
+  - { name: "master3", ipaddr: "10.0.0.23" }
+worker_nodes:
+  - { name: "worker1", ipaddr: "10.0.0.24" }
+  - { name: "worker2", ipaddr: "10.0.0.25" }
 api:
   pool_name: ocp_api_pool
   vip_name: ocp_api_vip

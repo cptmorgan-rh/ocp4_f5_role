@@ -39,7 +39,7 @@
   when:
     - f5.partition != "Common"
 
-- name: Create master nodes
+- name: Create bootstrap and master nodes
   bigip_node:
     address: "{{ item.ipaddr }}"
     name: "{{ item.name }}"
@@ -48,13 +48,17 @@
     monitors:
       - "{{ api.monitor }}"
       - "{{ machine_api.monitor }}"
+    availability_requirements:
+      at_least: 1
+      type: at_least
     provider:
       server: "{{ f5.host }}"
       user: "{{ f5.username }}"
       password: "{{ f5.password }}"
       validate_certs: "{{ f5.validate_certs }}"
   with_items:
-    - "{{ master_vms }}"
+    - "{{ master_nodes }}"
+    - "{{ bootstrap_node }}"
 
 - name: Create worker nodes
   bigip_node:
@@ -65,13 +69,16 @@
     monitors:
       - "{{ http.monitor }}"
       - "{{ https.monitor }}"
+    availability_requirements:
+      at_least: 1
+      type: at_least
     provider:
       server: "{{ f5.host }}"
       user: "{{ f5.username }}"
       password: "{{ f5.password }}"
       validate_certs: "{{ f5.validate_certs }}"
   with_items:
-    - "{{ worker_vms }}"
+    - "{{ worker_nodes }}"
 
 - name: Create OCP pools
   bigip_pool:
@@ -91,7 +98,7 @@
     - "{{ http }}"
     - "{{ https }}"
 
-- name: Add master nodes to api pool
+- name: Add bootstrap and master nodes to api pool
   bigip_pool_member:
     host: "{{ item.ipaddr }}"
     name: "{{ item.name }}"
@@ -105,9 +112,10 @@
       password: "{{ f5.password }}"
       validate_certs: "{{ f5.validate_certs }}"
   with_items:
-    - "{{ master_vms }}"
+    - "{{ master_nodes }}"
+    - "{{ bootstrap_node }}"
 
-- name: Add master nodes to machine api pool
+- name: Add bootstrap and master nodes to machine api pool
   bigip_pool_member:
     host: "{{ item.ipaddr }}"
     name: "{{ item.name }}"
@@ -121,7 +129,8 @@
       password: "{{ f5.password }}"
       validate_certs: "{{ f5.validate_certs }}"
   with_items:
-    - "{{ master_vms }}"
+    - "{{ master_nodes }}"
+    - "{{ bootstrap_node }}"
 
 - name: Add worker nodes to https pool
   bigip_pool_member:
@@ -137,7 +146,7 @@
       password: "{{ f5.password }}"
       validate_certs: "{{ f5.validate_certs }}"
   with_items:
-    - "{{ worker_vms }}"
+    - "{{ worker_nodes }}"
 
 - name: Add worker nodes to http pool
   bigip_pool_member:
@@ -153,7 +162,7 @@
       password: "{{ f5.password }}"
       validate_certs: "{{ f5.validate_certs }}"
   with_items:
-    - "{{ worker_vms }}"
+    - "{{ worker_nodes }}"
 
 - name: Create OCP VIPs
   bigip_virtual_server:
